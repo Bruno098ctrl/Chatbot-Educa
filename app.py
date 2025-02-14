@@ -13,18 +13,16 @@ def home():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    data = request.json
-    user_message = data.get("mensagem", "")
-
-    if not user_message:
-        return jsonify({"erro": "Nenhuma mensagem recebida"}), 400
-
     try:
-        # Modelo padrão como gpt-3.5-turbo para evitar erro de cota
-        modelo = "gpt-3.5-turbo"
+        data = request.json
+        user_message = data.get("mensagem", "").strip()
 
+        if not user_message:
+            return jsonify({"error": "Nenhuma mensagem recebida"}), 400
+
+        # Enviar a mensagem para a OpenAI
         response = openai.ChatCompletion.create(
-            model=modelo,
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": "Você é um assistente educacional."},
                 {"role": "user", "content": user_message}
@@ -35,7 +33,10 @@ def webhook():
         return jsonify({"resposta": bot_response})
 
     except openai.error.OpenAIError as e:
-        return jsonify({"erro": str(e)}), 500
+        return jsonify({"error": f"Erro na OpenAI: {str(e)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Erro interno do servidor: {str(e)}"}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 10000))  # Render usa a porta definida na variável PORT
+    app.run(host="0.0.0.0", port=port)
