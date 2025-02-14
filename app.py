@@ -17,12 +17,14 @@ def webhook():
     user_message = data.get("mensagem", "")
 
     if not user_message:
-        return jsonify({"message": "Nenhuma mensagem recebida"}), 400
+        return jsonify({"erro": "Nenhuma mensagem recebida"}), 400
 
     try:
-        # Enviar a mensagem para a OpenAI
+        # Modelo padrão como gpt-3.5-turbo para evitar erro de cota
+        modelo = "gpt-3.5-turbo"
+
         response = openai.ChatCompletion.create(
-            model="gpt-4o",
+            model=modelo,
             messages=[
                 {"role": "system", "content": "Você é um assistente educacional."},
                 {"role": "user", "content": user_message}
@@ -30,10 +32,10 @@ def webhook():
         )
 
         bot_response = response["choices"][0]["message"]["content"]
-        return jsonify({"message": bot_response})
+        return jsonify({"resposta": bot_response})
 
     except openai.error.OpenAIError as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"erro": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
