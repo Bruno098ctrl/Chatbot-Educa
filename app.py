@@ -5,7 +5,7 @@ import os
 app = Flask(__name__)
 
 # Configuração da chave da API da OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")  # Pegando a chave das variáveis de ambiente
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 @app.route("/", methods=["GET"])
 def home():
@@ -14,13 +14,12 @@ def home():
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
-    user_message = data.get("mensagem", "")  # Alterado para "mensagem" para corresponder ao JSON enviado
+    user_message = data.get("mensagem", "")
 
     if not user_message:
         return jsonify({"message": "Nenhuma mensagem recebida"}), 400
 
     try:
-        # Enviar a mensagem para a OpenAI
         response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
@@ -32,7 +31,7 @@ def webhook():
         bot_response = response["choices"][0]["message"]["content"]
         return jsonify({"message": bot_response})
 
-    except Exception as e:
+    except openai.error.OpenAIError as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
