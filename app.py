@@ -5,7 +5,7 @@ import os
 app = Flask(__name__)
 
 # Configuração da chave da API da OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = os.getenv("OPENAI_API_KEY")  # Pegando a chave das variáveis de ambiente
 
 @app.route("/", methods=["GET"])
 def home():
@@ -20,8 +20,9 @@ def webhook():
         return jsonify({"message": "Nenhuma mensagem recebida"}), 400
 
     try:
+        # Enviar a mensagem para a OpenAI
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": "Você é um assistente educacional."},
                 {"role": "user", "content": user_message}
