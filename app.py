@@ -4,7 +4,8 @@ import os
 
 app = Flask(__name__)
 
-openai.api_key = os.getenv("OPENAI_API_KEY")  # Pegando a chave da variável de ambiente
+# Configuração da chave da API da OpenAI
+openai.api_key = os.getenv("OPENAI_API_KEY")  # Pegando a chave das variáveis de ambiente
 
 @app.route("/", methods=["GET"])
 def home():
@@ -12,28 +13,33 @@ def home():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    data = request.json
-    print("Recebido:", data)  # DEBUG: Verificar entrada
+    try:
+        data = request.json
+        if not data or "Body" not in data:
+            return jsonify({"error": "Requisição inválida. O campo 'Body' é obrigatório."}), 400
 
-    if not data:
-        return jsonify({"error": "Nenhum dado recebido"}), 400
+        user_message = data["Body"]
 
-    user_message = data.get("Body", "")
+        # Chamada à API da OpenAI com modelo gpt-4o
+        response = openai.ChatCompletion.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "Você é um assistente educacional."},
+                {"role": "user", "content": user_message}
+            ]
+        )
 
-    if not user_message:
-        return jsonify({"error": "Nenhuma mensagem encontrada na chave 'Body'"}), 400
+        bot_response = response["choices"][0]["message"]["content"]
+        return jsonify({"message": bot_response})
 
-    # Enviar a mensagem para a OpenAI
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "Você é um assistente educacional."},
-            {"role": "user", "content": user_message}
-        ]
-    )
+    except openai.error.RateLimitError:
+        return jsonify({"error": "Você excedeu sua cota de uso da API da OpenAI. Verifique seu plano e billing."}), 429
 
-    bot_response = response["choices"][0]["message"]["content"]
-    return jsonify({"message": bot_response})
+    except openai.error.InvalidRequestError:
+        return jsonify({"error": "Erro na requisição para a OpenAI. Verifique os parâmetros enviados."}), 400
+
+    except Exception as e:
+        return jsonify({"error": f"Erro interno do servidor: {str(e)}"}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
