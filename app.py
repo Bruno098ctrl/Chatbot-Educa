@@ -4,8 +4,7 @@ import os
 
 app = Flask(__name__)
 
-# Configuração da chave da API da OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")  # Pegando a chave das variáveis de ambiente
+openai.api_key = os.getenv("OPENAI_API_KEY")  # Pegando a chave da variável de ambiente
 
 @app.route("/", methods=["GET"])
 def home():
@@ -13,30 +12,28 @@ def home():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    try:
-        data = request.json
-        user_message = data.get("mensagem", "").strip()
+    data = request.json
+    print("Recebido:", data)  # DEBUG: Verificar entrada
 
-        if not user_message:
-            return jsonify({"error": "Nenhuma mensagem recebida"}), 400
+    if not data:
+        return jsonify({"error": "Nenhum dado recebido"}), 400
 
-        # Enviar a mensagem para a OpenAI
-        response = openai.ChatCompletion.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "Você é um assistente educacional."},
-                {"role": "user", "content": user_message}
-            ]
-        )
+    user_message = data.get("Body", "")
 
-        bot_response = response["choices"][0]["message"]["content"]
-        return jsonify({"resposta": bot_response})
+    if not user_message:
+        return jsonify({"error": "Nenhuma mensagem encontrada na chave 'Body'"}), 400
 
-    except openai.error.OpenAIError as e:
-        return jsonify({"error": f"Erro na OpenAI: {str(e)}"}), 500
-    except Exception as e:
-        return jsonify({"error": f"Erro interno do servidor: {str(e)}"}), 500
+    # Enviar a mensagem para a OpenAI
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "Você é um assistente educacional."},
+            {"role": "user", "content": user_message}
+        ]
+    )
+
+    bot_response = response["choices"][0]["message"]["content"]
+    return jsonify({"message": bot_response})
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))  # Render usa a porta definida na variável PORT
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=5000)
